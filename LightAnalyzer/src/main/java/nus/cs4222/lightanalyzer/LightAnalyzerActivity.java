@@ -1,16 +1,27 @@
 package nus.cs4222.lightanalyzer;
 
-import java.io.*;
-import java.util.*;
-import java.text.*;
+import android.app.Activity;
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import android.app.*;
-import android.os.*;
-import android.widget.*;
-import android.view.*;
-import android.content.*;
-import android.hardware.*;
-import android.util.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 /**
    Activity that logs Light sensor readings to the sdcard.
