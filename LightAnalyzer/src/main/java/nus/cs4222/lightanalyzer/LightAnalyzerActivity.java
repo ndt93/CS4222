@@ -177,11 +177,16 @@ public class LightAnalyzerActivity
         // Get the ambient light level in lux
         float lux = event.values[0];
 
+//        By Jiahuan
+//        check the current ambient light against the threshold
+        //    bool value for if indoor
+        boolean ifIndoor = lux < ambientThreshold;
+
         // Log the reading
         logLightReading( timestamp , lux );
 
         // Update the GUI
-        updateLightTextView( timestamp , lux );
+        updateLightTextView( timestamp , lux, ifIndoor );
     }
 
     /** Called when the light sensor accuracy changes. */
@@ -245,13 +250,24 @@ public class LightAnalyzerActivity
 
     /** Helper method that updates the light text view. */
     private void updateLightTextView( long timestamp , 
-                                      float lux ) {
+                                      float lux,
+                                      boolean ifIndoor) {
 
         // Light sensor reading details
         final StringBuilder sb = new StringBuilder();
         sb.append( "\nLight--" );
         sb.append( "\nNumber of readings: " + numLightReadings );
         sb.append( "\nAmbient light level (lux): " + lux );
+//        By Jiahuan
+        String ambientStatus;
+        if (ifIndoor){
+            ambientStatus = "indoor";
+        } else if (!ifIndoor){
+            ambientStatus = "outdoor";
+        } else {
+            ambientStatus = "undefined";
+        }
+        sb.append("\nYour location is currently " + ambientStatus);
 
         // Update the text view in the main UI thread
         handler.post ( new Runnable() {
@@ -364,4 +380,9 @@ public class LightAnalyzerActivity
 
     /** DDMS Log Tag. */
     private static final String TAG = "LightAnalyzerActivity";
+
+//    below add in by Jiahuan
+//    threshold we set
+    static final int ambientThreshold = 200;
+
 }
