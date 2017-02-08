@@ -68,9 +68,7 @@ public class LightAnalyzerActivity
             // Open the log file
             openLogFile();
 
-//            by Jiahuan
-//            start gps reading
-            startGPSReading();
+
         }
         catch ( Exception e ) {
             // Log the exception
@@ -131,6 +129,8 @@ public class LightAnalyzerActivity
 
             // Set the flag
             isLightSamplingOn = true;
+
+
         }
         catch ( Exception e ) {
             // Log the exception
@@ -155,6 +155,9 @@ public class LightAnalyzerActivity
             // Stop light sensor sampling
             sensorManager.unregisterListener( this , 
                                               lightSensor );
+
+//            stop gps reading
+            stopGPSReading();
         }
         catch ( Exception e ) {
             // Log the exception
@@ -189,13 +192,24 @@ public class LightAnalyzerActivity
 //        By Jiahuan
 //        check the current ambient light against the threshold
         //    bool value for if indoor
-        boolean ifIndoor = lux < ambientThreshold;
+        boolean ifIndoor = lux <= ambientThreshold;
 
         // Log the reading
         logLightReading( timestamp , lux );
 
         // Update the GUI
         updateLightTextView( timestamp , lux, ifIndoor );
+
+        if (ifIndoor){
+//            stop GPS reading
+            stopGPSReading();
+        }
+        else if (!ifIndoor){
+            //            by Jiahuan
+//            start gps reading
+
+            startGPSReading();
+        }
     }
 
     /** Called when the light sensor accuracy changes. */
@@ -209,14 +223,24 @@ public class LightAnalyzerActivity
 //    start GPS Reading
     private void startGPSReading(){
     try{
-        // Acquire a reference to the system Location Manager
-        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
-        LocationListener locationListener = new LocationListener() {
+        if (isGPSReadingOn)
+            return;
+
+        GPSTextView.setText( "\nAwaiting GPS readings...\n" );
+
+        // TODO: 2/8/2017  to delete
+        createToast("started GPS Reading");
+
+        // Acquire a reference to the system Location Manager
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
+                // TODO: 2/8/2017 to delete
+//                createToast("updating GPS");
+
                 // Called when a new location is found by the network location provider.
-                // TODO: 2/8/2017 , to delete
-                createToast("inside on location changed");
                 updateGPSTextView(location);
             }
 
@@ -230,6 +254,8 @@ public class LightAnalyzerActivity
                 TIME_PERIOD,
                 MIN_DISTANCE_MOVED,
                 locationListener );
+//        set flag
+        isGPSReadingOn = true;
     }
     catch ( Exception e ) {
         // Log the exception
@@ -237,6 +263,42 @@ public class LightAnalyzerActivity
         // Tell the user
         createToast ( "Unable to start GPS Reading: " + e.toString() );
     }
+    }
+
+    //    stop GPS Reading
+    private void stopGPSReading(){
+        try{
+            if (!isGPSReadingOn)
+                return;
+
+            // TODO: 2/8/2017  to delete
+            createToast("stopped GPS Reading");
+
+            locationManager.removeUpdates(locationListener);
+
+            //        set flag
+            isGPSReadingOn = false;
+
+            // Update the text view in the main UI thread
+            handler.post ( new Runnable() {
+                @Override
+                public void run() {
+                    GPSTextView.setText( "\nGPS is off indoor\n" );
+                }
+            } );
+
+        }
+        catch ( Exception e ) {
+            // Log the exception
+            Log.e ( TAG , "Unable to stop GPS Reading" , e );
+            // Tell the user
+            createToast ( "Unable to stop GPS Reading: " + e.toString() );
+        }
+
+        finally {
+            locationManager = null;
+            locationListener = null;
+        }
     }
 
     /** Helper method that updates the GPS  text view. */
@@ -254,7 +316,7 @@ public class LightAnalyzerActivity
         handler.post ( new Runnable() {
             @Override
             public void run() {
-                lightTextView.setText( sb.toString() );
+                GPSTextView.setText( sb.toString() );
             }
         } );
     }
@@ -455,4 +517,10 @@ public class LightAnalyzerActivity
     private static final int TIME_PERIOD = 0;
 //    distance diff in which the gps update itself
     private static final int MIN_DISTANCE_MOVED = 0;
+//    /** Flag to indicate that light sensing is going on. */
+    private boolean isGPSReadingOn;
+// location manager
+    private LocationManager locationManager;
+//    listner location
+    private LocationListener locationListener;
 }
