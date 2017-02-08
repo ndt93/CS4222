@@ -6,6 +6,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -14,6 +16,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.location.LocationManager;
+
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -62,6 +67,10 @@ public class LightAnalyzerActivity
 
             // Open the log file
             openLogFile();
+
+//            by Jiahuan
+//            start gps reading
+            startGPSReading();
         }
         catch ( Exception e ) {
             // Log the exception
@@ -196,6 +205,60 @@ public class LightAnalyzerActivity
         // Ignore
     }
 
+//    by Jiahuan
+//    start GPS Reading
+    private void startGPSReading(){
+    try{
+        // Acquire a reference to the system Location Manager
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        LocationListener locationListener = new LocationListener() {
+            public void onLocationChanged(Location location) {
+                // Called when a new location is found by the network location provider.
+                // TODO: 2/8/2017 , to delete
+                createToast("inside on location changed");
+                updateGPSTextView(location);
+            }
+
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+            public void onProviderEnabled(String provider) {}
+
+            public void onProviderDisabled(String provider) {}
+        };
+        locationManager.requestLocationUpdates( LocationManager.GPS_PROVIDER,
+                TIME_PERIOD,
+                MIN_DISTANCE_MOVED,
+                locationListener );
+    }
+    catch ( Exception e ) {
+        // Log the exception
+        Log.e ( TAG , "Unable to start GPS Reading" , e );
+        // Tell the user
+        createToast ( "Unable to start GPS Reading: " + e.toString() );
+    }
+    }
+
+    /** Helper method that updates the GPS  text view. */
+    private void updateGPSTextView( Location location) {
+
+        // Light sensor reading details
+        final StringBuilder sb = new StringBuilder();
+        sb.append("\n");
+        sb.append( "\nGPS--" );
+        sb.append( "\nlatitude: " + location.getLatitude() );
+        sb.append( "\nlongitude: " + location.getLongitude() );
+
+
+        // Update the text view in the main UI thread
+        handler.post ( new Runnable() {
+            @Override
+            public void run() {
+                lightTextView.setText( sb.toString() );
+            }
+        } );
+    }
+
     /** Helper method that sets up the GUI. */
     private void setUpGUI() {
 
@@ -209,6 +272,8 @@ public class LightAnalyzerActivity
             (Button) findViewById( R.id.PA1Activity_Button_StopLight );
         lightTextView = 
             (TextView) findViewById( R.id.PA1Activity_TextView_Light );
+        GPSTextView =
+            (TextView) findViewById(R.id.PA1Activity_TextView_GPS);
 
         // Disable the stop button
         stopLightButton.setEnabled( false );
@@ -383,6 +448,11 @@ public class LightAnalyzerActivity
 
 //    below add in by Jiahuan
 //    threshold we set
-    static final int ambientThreshold = 200;
-
+    private static final int ambientThreshold = 1500;
+    /** gps reading textview. */
+    private TextView GPSTextView;
+//    time period in which the gps update itself
+    private static final int TIME_PERIOD = 0;
+//    distance diff in which the gps update itself
+    private static final int MIN_DISTANCE_MOVED = 0;
 }

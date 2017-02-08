@@ -36,6 +36,11 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="" />
 
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/PA1Activity_TextView_GPS" />
+
   </LinearLayout>
 
 </ScrollView>
