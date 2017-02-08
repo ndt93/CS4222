@@ -68,6 +68,9 @@ public class LightAnalyzerActivity
             // Open the log file
             openLogFile();
 
+//            google api on location
+
+
 
         }
         catch ( Exception e ) {
