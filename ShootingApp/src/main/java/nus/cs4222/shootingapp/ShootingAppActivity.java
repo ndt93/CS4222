@@ -144,6 +144,7 @@ public class ShootingAppActivity
         acclSensor = sensorManager.getDefaultSensor( Sensor.TYPE_LINEAR_ACCELERATION );
         gravitySensor = sensorManager.getDefaultSensor( Sensor.TYPE_GRAVITY );
         mMagneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        mRotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
 
         if( acclSensor == null ) {
             throw new Exception( "Oops, there is no linear accelerometer sensor on this device :(" );
@@ -170,6 +171,7 @@ public class ShootingAppActivity
                                         gravitySensor ,                     // Sensor to measure 
                                         SensorManager.SENSOR_DELAY_GAME );  // Measurement interval (microsec)
         sensorManager.registerListener(this, mMagneticSensor, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(this, mRotationVectorSensor, SensorManager.SENSOR_DELAY_GAME);
     }
 
     /** Stops all sensing. */
@@ -189,16 +191,21 @@ public class ShootingAppActivity
 
         // Case 1: Gravity sensor
         if( event.sensor.getType() == Sensor.TYPE_GRAVITY) {
+            System.arraycopy(event.values, 0,
+                    mGravityReading, 0, mGravityReading.length);
             processGravityValues(event);
         }
         // Case 2: Linear accl sensor
         else if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
             System.arraycopy(event.values, 0,
                     mAccelerometerReading, 0, mAccelerometerReading.length);
-            processAcclValues( event );
+            processAcclValues(event);
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(event.values, 0,
                     mMagnetometerReading, 0, mMagnetometerReading.length);
+        } else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+            System.arraycopy(event.values, 0,
+                    mRotationVector, 0, mRotationVector.length);
         }
 
         // PA3: Detect the shooting direction and region.
@@ -298,15 +305,23 @@ public class ShootingAppActivity
         }
 
         final float[] rotationMatrix = new float[9];
-        boolean status = sensorManager.getRotationMatrix(rotationMatrix, null,
-                mAccelerometerReading, mMagnetometerReading);
+        boolean status = true;
+        if (mRotationVectorSensor != null) {
+            sensorManager.getRotationMatrixFromVector(rotationMatrix, mRotationVector);
+        } else if (gravitySensor != null) {
+            status = sensorManager.getRotationMatrix(rotationMatrix, null,
+                    mGravityReading, mMagnetometerReading);
+        } else {
+            status = sensorManager.getRotationMatrix(rotationMatrix, null,
+                    mAccelerometerReading, mMagnetometerReading);
+        }
         if (!status) {
             return;
         }
 
         final float[] orientationAngles = new float[3];
         sensorManager.getOrientation(rotationMatrix, orientationAngles);
-        shootingDirection = (float)(Math.toDegrees(orientationAngles[0]) + 360 % 360);
+        shootingDirection = (float)((Math.toDegrees(orientationAngles[0]) + 360) % 360);
 
         shootingRegion = (int)(shootingDirection/45) + 1;
 
@@ -524,6 +539,7 @@ public class ShootingAppActivity
     /** Gravity sensor. */
     private Sensor gravitySensor;
     private Sensor mMagneticSensor;
+    private Sensor mRotationVectorSensor;
 
     // Gravity sensor
     /** Last time the GUI was updated about phone angle (UNIX millisec). */
@@ -553,7 +569,7 @@ public class ShootingAppActivity
     /** Last time the GUI was updated about phone direction (UNIX millisec). */
     private long lastPhoneDirectionTime = 0L;
     /** Max delay before GUI is updated about phone direction (millisec). */
-    private static final long MAX_UPDATE_INTERVAL_PHONE_DIRECTION = 1000L;
+    private static final long MAX_UPDATE_INTERVAL_PHONE_DIRECTION = 250L;
     /** Number of shooting regions (in the 360 deg shooting region around the user). */
     private static final int NUM_SHOOTING_REGIONS = 8;
     /** Shooting direction the user is pointing at (in the range 0 .. 360 degrees). */
@@ -600,7 +616,9 @@ public class ShootingAppActivity
     private Handler handler;
 
     private final float[] mAccelerometerReading = new float[3];
+    private final float[] mGravityReading = new float[3];
     private final float[] mMagnetometerReading = new float[3];
+    private final float[] mRotationVector = new float[3];
 
     /** TAG used for ddms logging. */
     private static final String TAG = "ShootingApp";
