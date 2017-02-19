@@ -1,20 +1,20 @@
 package nus.cs4222.shootingapp;
 
-import java.util.ArrayList;
-
-import android.os.Bundle;
-import android.os.Handler;
 import android.app.Activity;
 import android.content.Context;
-import android.widget.TextView;
-import android.widget.Toast;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.media.SoundPool;
 import android.media.AudioManager;
+import android.media.SoundPool;
+import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
 
 /**
    Activity that detects a simple gesture by the user.
@@ -143,10 +143,11 @@ public class ShootingAppActivity
         // Get references to the linear accl and gravity sensors
         acclSensor = sensorManager.getDefaultSensor( Sensor.TYPE_LINEAR_ACCELERATION );
         gravitySensor = sensorManager.getDefaultSensor( Sensor.TYPE_GRAVITY );
+        mMagneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+
         if( acclSensor == null ) {
             throw new Exception( "Oops, there is no linear accelerometer sensor on this device :(" );
-        }
-        else if( gravitySensor == null ) {
+        } else if( gravitySensor == null ) {
             throw new Exception( "Oops, there is no gravity sensor on this device :(" );
         }
     }
@@ -168,6 +169,7 @@ public class ShootingAppActivity
         sensorManager.registerListener( this ,                              // Listener
                                         gravitySensor ,                     // Sensor to measure 
                                         SensorManager.SENSOR_DELAY_GAME );  // Measurement interval (microsec)
+        sensorManager.registerListener(this, mMagneticSensor, SensorManager.SENSOR_DELAY_GAME);
     }
 
     /** Stops all sensing. */
@@ -186,12 +188,17 @@ public class ShootingAppActivity
         //  process them in another thread.
 
         // Case 1: Gravity sensor
-        if( event.sensor.getType() == Sensor.TYPE_GRAVITY ) {
-            processGravityValues( event );
+        if( event.sensor.getType() == Sensor.TYPE_GRAVITY) {
+            processGravityValues(event);
         }
         // Case 2: Linear accl sensor
-        else if( event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION ) {
+        else if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
+            System.arraycopy(event.values, 0,
+                    mAccelerometerReading, 0, mAccelerometerReading.length);
             processAcclValues( event );
+        } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+            System.arraycopy(event.values, 0,
+                    mMagnetometerReading, 0, mMagnetometerReading.length);
         }
 
         // PA3: Detect the shooting direction and region.
@@ -286,15 +293,31 @@ public class ShootingAppActivity
         //  by default).
         // Also, display the shooting direction and the shooting region 
         //  in the text view below.
+        if (!isFaceUp) {
+            return;
+        }
+
+        final float[] rotationMatrix = new float[9];
+        boolean status = sensorManager.getRotationMatrix(rotationMatrix, null,
+                mAccelerometerReading, mMagnetometerReading);
+        if (!status) {
+            return;
+        }
+
+        final float[] orientationAngles = new float[3];
+        sensorManager.getOrientation(rotationMatrix, orientationAngles);
+        shootingDirection = (float)(Math.toDegrees(orientationAngles[0]) + 360 % 360);
+
+        shootingRegion = (int)(shootingDirection/45) + 1;
 
         // Update the GUI (at a slower rate easy for the user to see on screen)
         long currentTime = System.currentTimeMillis();
         if( currentTime - lastPhoneDirectionTime > MAX_UPDATE_INTERVAL_PHONE_DIRECTION ) {
 
             // Update the text view
-            textView_PhoneShootingRegion.setText( "\nShooting direction: " + shootingDirection + " degrees" + 
-                                                  "\nShooting region: " + shootingRegion );
-
+            textView_PhoneShootingRegion.setText("\nShooting direction: "
+                                                 + shootingDirection + " degrees\n"
+                                                 + "Shooting region: " + shootingRegion);
             // Set the last GUI update time
             lastPhoneDirectionTime = currentTime;
         }
@@ -486,7 +509,7 @@ public class ShootingAppActivity
         handler.post( new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText ( getApplicationContext() , 
+                    Toast.makeText ( getApplicationContext() ,
                                      toastMessage , 
                                      Toast.LENGTH_SHORT ).show();
                 }
@@ -500,6 +523,7 @@ public class ShootingAppActivity
     private Sensor acclSensor;
     /** Gravity sensor. */
     private Sensor gravitySensor;
+    private Sensor mMagneticSensor;
 
     // Gravity sensor
     /** Last time the GUI was updated about phone angle (UNIX millisec). */
@@ -529,7 +553,7 @@ public class ShootingAppActivity
     /** Last time the GUI was updated about phone direction (UNIX millisec). */
     private long lastPhoneDirectionTime = 0L;
     /** Max delay before GUI is updated about phone direction (millisec). */
-    private static final long MAX_UPDATE_INTERVAL_PHONE_DIRECTION = 250L;
+    private static final long MAX_UPDATE_INTERVAL_PHONE_DIRECTION = 1000L;
     /** Number of shooting regions (in the 360 deg shooting region around the user). */
     private static final int NUM_SHOOTING_REGIONS = 8;
     /** Shooting direction the user is pointing at (in the range 0 .. 360 degrees). */
@@ -574,6 +598,10 @@ public class ShootingAppActivity
     // For DDMS Logging and Toasts
     /** Handler to the main thread. */
     private Handler handler;
+
+    private final float[] mAccelerometerReading = new float[3];
+    private final float[] mMagnetometerReading = new float[3];
+
     /** TAG used for ddms logging. */
     private static final String TAG = "ShootingApp";
 }
