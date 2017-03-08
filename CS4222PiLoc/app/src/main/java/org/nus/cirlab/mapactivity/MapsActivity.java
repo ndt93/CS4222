@@ -12,7 +12,6 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -52,7 +51,6 @@ import org.nus.cirlab.mapactivity.DataStructure.StepInfo;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.Vector;
 
 import static org.nus.cirlab.mapactivity.R.id.map;
@@ -973,31 +971,79 @@ public class MapsActivity extends AppCompatActivity implements OnMarkerDragListe
         }).start();
     }
 
-    //You need to improve this algorithm
     public LatLng getLocation(RadioMap mRadioMap, Vector<Fingerprint> fp) {
-        // try your own localization algorithm here
         LatLng Key = null;
-        double sum;
-        double minScore = Double.MAX_VALUE;
+
+        // Set of nearest neighbours. Priority queue will be a better choice
+        // if the number of neighbours considered is large
+        final int maxNumNeighbours = 3;
+        int curNumNeighbours = 0;
+        LatLng neighboursPos[] = new LatLng[maxNumNeighbours];
+        double neighboursScores[] = new double[maxNumNeighbours];
+
+        for (int i = 0; i < maxNumNeighbours; i++) {
+            neighboursScores[i] = Double.MAX_VALUE;
+        }
 
         for (LatLng k : mRadioMap.mLocFingerPrints.keySet()) {
-            int number = 0;
-            sum = 0;
+            int numMatches = 0;
+            double score = 0;
+
             for (Fingerprint f1 : fp) {
-                for(Fingerprint f2 :mRadioMap.mLocFingerPrints.get(k)){
-                    if(f1.mMac.equalsIgnoreCase(f2.mMac)){
-                        number++;
-                        sum += f1.mRSSI-f2.mRSSI;
+                for (Fingerprint f2 : mRadioMap.mLocFingerPrints.get(k)) {
+                    if (f1.mMac.equalsIgnoreCase(f2.mMac)) {
+                        numMatches++;
+                        score += (f1.mRSSI - f2.mRSSI)*(f1.mRSSI - f2.mRSSI);
                         break;
                     }
                 }
             }
 
-            if ( number > fp.size() / 3 && sum < minScore) {
-                minScore = sum;
-                Key = new LatLng(k.latitude, k.longitude);
+            if (numMatches <= fp.size()/3) {
+                continue;
+            }
+
+            score = Math.sqrt(score);
+
+            // If qualified, insert into the list of nearest neighbours at correct position
+            for (int i = 0; i < maxNumNeighbours; i++) {
+                if (score >= neighboursScores[i]) {
+                    continue;
+                }
+
+                curNumNeighbours = Math.min(maxNumNeighbours, curNumNeighbours + 1);
+
+                // Shift neighbours with higher score to make place for new entry
+                for (int j = maxNumNeighbours - 1; j > i; j--)
+                {
+                    neighboursScores[j] = neighboursScores[j-1];
+                    neighboursPos[j] = neighboursPos[j-1];
+                }
+
+                neighboursScores[i] = score;
+                neighboursPos[i] = k;
+                break;
             }
         }
+
+        for (int i = 0; i < curNumNeighbours; i++) {
+            Log.d(TAG, "neighbour:lat=" + neighboursPos[i].latitude
+                    + ",long=" + neighboursPos[i].longitude
+                    + ",score=" + neighboursScores[i]);
+        }
+
+        if (curNumNeighbours > 0) {
+            double latitude = 0;
+            double longitude = 0;
+            for (int i = 0; i < curNumNeighbours; i++) {
+                latitude += neighboursPos[i].latitude;
+                longitude += neighboursPos[i].longitude;
+            }
+            latitude /= curNumNeighbours;
+            longitude /= curNumNeighbours;
+            Key = new LatLng(latitude, longitude);
+        }
+
         return Key;
     }
 
