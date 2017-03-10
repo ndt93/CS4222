@@ -971,12 +971,29 @@ public class MapsActivity extends AppCompatActivity implements OnMarkerDragListe
         }).start();
     }
 
+    private static Vector<Fingerprint> task2Fps = new Vector<>();
+    {
+        task2Fps.add(new Fingerprint("84:b8:02:00:3b:bb", 83, 0));
+        task2Fps.add(new Fingerprint("88:f0:31:8d:21:cf", 82, 0));
+        task2Fps.add(new Fingerprint("84:b8:02:00:3b:bf", 80, 0));
+        task2Fps.add(new Fingerprint("88:f0:31:8d:21:cb", 85, 0));
+        task2Fps.add(new Fingerprint("a8:9d:21:74:0c:09", 75, 0));
+        task2Fps.add(new Fingerprint("74:a2:e6:ec:55:c5", 71, 0));
+        task2Fps.add(new Fingerprint("74:a2:e6:ec:55:c9", 64, 0));
+        task2Fps.add(new Fingerprint("a8:9d:21:74:0d:9", 69, 0));
+        task2Fps.add(new Fingerprint("a8:9d:21:44:05:aa", 85, 0));
+        task2Fps.add(new Fingerprint("a8:9d:21:0f:7e:89", 58, 0));
+        task2Fps.add(new Fingerprint("a8:9d:21:0f:7e:87", 51, 0));
+        task2Fps.add(new Fingerprint("a8:9d:21:74:0d:99", 66, 0));
+        task2Fps.add(new Fingerprint("a8:9d:21:0f:7e:8f", 45, 0));
+    }
+
     public LatLng getLocation(RadioMap mRadioMap, Vector<Fingerprint> fp) {
         LatLng Key = null;
 
         // Set of nearest neighbours. Priority queue will be a better choice
         // if the number of neighbours considered is large
-        final int maxNumNeighbours = 3;
+        final int maxNumNeighbours = 5;
         int curNumNeighbours = 0;
         LatLng neighboursPos[] = new LatLng[maxNumNeighbours];
         double neighboursScores[] = new double[maxNumNeighbours];
@@ -1035,6 +1052,7 @@ public class MapsActivity extends AppCompatActivity implements OnMarkerDragListe
         if (curNumNeighbours > 0) {
             double latitude = 0;
             double longitude = 0;
+
             for (int i = 0; i < curNumNeighbours; i++) {
                 latitude += neighboursPos[i].latitude;
                 longitude += neighboursPos[i].longitude;
