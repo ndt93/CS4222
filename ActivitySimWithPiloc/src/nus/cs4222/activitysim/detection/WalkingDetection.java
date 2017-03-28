@@ -10,6 +10,7 @@ public class WalkingDetection {
     private State mState;
 
     private DigitalFilter[] mDigitalFilters = new DigitalFilter[3];
+    private ShiftRegisters[] mShiftRegisters = new ShiftRegisters[3];
 
     private int mThresholdsUpdatePeriod;
     private int mSamplingCounter = 0;
@@ -23,9 +24,10 @@ public class WalkingDetection {
 
         for (int i = 0; i < 3; i++) {
             mDigitalFilters[i] = new DigitalFilter(4);
-            mMax[i] = Float.MIN_VALUE;
-            mMin[i] = Float.MAX_VALUE;
+            mShiftRegisters[i] = new ShiftRegisters(0.5f);
         }
+
+        resetMinMax();
 
         mState = State.WARMING_UP;
     }
@@ -42,12 +44,27 @@ public class WalkingDetection {
 
         if (mSamplingCounter == 50) {
             updateThresholds();
+            resetMinMax();
             mSamplingCounter = 0;
             mState = State.READY;
         }
 
-        if (mState == State.READY) {
+        updateShiftRegisters(sampleResult);
+    }
 
+    private void resetMinMax() {
+        for (int i = 0; i < 3; i++) {
+            mMax[i] = -Float.MAX_VALUE;
+            mMin[i] = Float.MAX_VALUE;
+        }
+    }
+
+    private void updateShiftRegisters(AccelSample sample) {
+        /*
+        if (sample.timestamp >= 1490433348106L && sample.timestamp <= 1490433804866L) {
+        }*/
+        for (int i = 0; i < 3; i++) {
+            mShiftRegisters[i].push(sample.getComponent(i));
         }
     }
 
@@ -69,8 +86,8 @@ public class WalkingDetection {
     }
 
     private class ShiftRegisters {
-        private float mSampleNew;
-        private float mSampleOld;
+        public float mSampleNew;
+        public float mSampleOld;
         private float mPrecision;
 
         public ShiftRegisters(float precision) {
