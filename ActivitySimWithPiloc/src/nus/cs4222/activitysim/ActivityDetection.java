@@ -2,7 +2,7 @@ package nus.cs4222.activitysim;
 
 import nus.cs4222.activitysim.DataStructure.Fingerprint;
 import nus.cs4222.activitysim.detection.AccelSample;
-import nus.cs4222.activitysim.detection.WalkingDetection;
+import nus.cs4222.activitysim.detection.StepCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,12 +46,12 @@ import java.util.Vector;
  does not need not be modified.
  */
 public class ActivityDetection {
-    private WalkingDetection mWalkingDetector;
+    private StepCounter mWalkingDetector;
 
     /** Initialises the detection algorithm. */
     public void initDetection()
             throws Exception {
-        mWalkingDetector = new WalkingDetection(50);
+        mWalkingDetector = new StepCounter(50);
 
         // If you are using the Piloc API, then you must load a radio map (in this case, Hande
         //  has provided the radio map data for the pathways marked in the map image in IVLE
