@@ -2,7 +2,8 @@ package nus.cs4222.activitysim;
 
 import nus.cs4222.activitysim.DataStructure.Fingerprint;
 import nus.cs4222.activitysim.detection.AccelSample;
-import nus.cs4222.activitysim.detection.StepCounter;
+import nus.cs4222.activitysim.detection.WalkingDetector;
+import nus.cs4222.activitysim.detection.WalkingDetector.WalkingState;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,12 +47,14 @@ import java.util.Vector;
  does not need not be modified.
  */
 public class ActivityDetection {
-    private StepCounter mWalkingDetector;
+    private UserActivities mCurrentActivity = UserActivities.IDLE_INDOOR;
+
+    private WalkingDetector mWalkingDetector;
 
     /** Initialises the detection algorithm. */
     public void initDetection()
             throws Exception {
-        mWalkingDetector = new StepCounter(50);
+        mWalkingDetector = new WalkingDetector();
 
         // If you are using the Piloc API, then you must load a radio map (in this case, Hande
         //  has provided the radio map data for the pathways marked in the map image in IVLE
@@ -71,6 +74,21 @@ public class ActivityDetection {
         // Add de-initialisation code here, if any
     }
 
+    private void detectActivity() {
+        WalkingState walkingState = mWalkingDetector.getWalkingState();
+        if (mCurrentActivity == UserActivities.WALKING) {
+            if (walkingState == WalkingState.NOT_WALKING) {
+                mCurrentActivity = UserActivities.IDLE_INDOOR;
+                ActivitySimulator.outputDetectedActivity(mCurrentActivity);
+            }
+        } else {
+            if (walkingState == WalkingState.WALKING) {
+                mCurrentActivity = UserActivities.WALKING;
+                ActivitySimulator.outputDetectedActivity(mCurrentActivity);
+            }
+        }
+    }
+
     /**
      Called when the accelerometer sensor has changed.
 
@@ -86,6 +104,7 @@ public class ActivityDetection {
                                      float z ,
                                      int accuracy ) {
         mWalkingDetector.putAcclSample(new AccelSample(timestamp, x, y, z));
+        detectActivity();
     }
 
     /**
