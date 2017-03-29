@@ -52,6 +52,7 @@ public class ActivityDetection {
     private long mLastActivityChangeTime = 0;
 
     private SpeedSensor mSpeedSensor;
+    private MotionSensor mMotionSensor;
     private WalkingDetector mWalkingDetector;
     private VehicleDetector mVehicleDetector;
     private EnvDetector mEnvDetector;
@@ -59,8 +60,9 @@ public class ActivityDetection {
     /** Initialises the detection algorithm. */
     public void initDetection() throws Exception {
         mSpeedSensor = new SpeedSensor();
+        mMotionSensor = new MotionSensor();
         mWalkingDetector = new WalkingDetector();
-        mVehicleDetector = new VehicleDetector(mSpeedSensor);
+        mVehicleDetector = new VehicleDetector(mSpeedSensor, mMotionSensor);
         // If you are using the Piloc API, then you must load a radio map (in this case, Hande
         //  has provided the radio map data for the pathways marked in the map image in IVLE
         //  workbin, which represents IDLE_COM1 state). You can use your own radio map data, or
@@ -90,10 +92,10 @@ public class ActivityDetection {
 
         WalkingDetector.State walkingState = mWalkingDetector.getWalkingState();
         VehicleDetector.State vehicleState = mVehicleDetector.getVehicleState();
-        String msg = "Current Activity: " + mCurrentActivity +
+        /* String msg = "Current Activity: " + mCurrentActivity +
                 "\nWalking State: " + walkingState +
                 "\nVehicle State: " + vehicleState;
-        //Log.d(TAG, msg);
+        Log.d(TAG, msg);*/
 
         switch (mCurrentActivity) {
             case WALKING:
@@ -115,6 +117,9 @@ public class ActivityDetection {
             case IDLE_OUTDOOR:
                 if (walkingState == WalkingDetector.State.WALKING) {
                     newActivity = UserActivities.WALKING;
+                } else if (mMotionSensor.getMotionState() == MotionSensor.State.MOVING &&
+                        vehicleState == VehicleDetector.State.IN_VEHICLE) {
+                    newActivity = UserActivities.BUS;
                 } else {
                     newActivity = detectIdleEnv();
                 }
@@ -184,6 +189,8 @@ public class ActivityDetection {
                                            float y ,
                                            float z ,
                                            int accuracy ) {
+        mMotionSensor.putLinAccelSample(x, y, z);
+        detectActivity();
     }
 
     /**

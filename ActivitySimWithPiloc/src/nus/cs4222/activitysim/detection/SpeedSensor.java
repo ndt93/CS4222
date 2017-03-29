@@ -1,7 +1,7 @@
 package nus.cs4222.activitysim.detection;
 
 public class SpeedSensor {
-    private static final double MAX_SPEED = 50;
+    private static final double MAX_SPEED = 200;
 
     private double mSpeed;
     private double mLastLon;
@@ -19,7 +19,7 @@ public class SpeedSensor {
             if (newSpeed <= MAX_SPEED) {
                 mSpeed = 0.3*mSpeed + 0.7*newSpeed;
             } else {
-                mSpeed /= 2.0;
+                mSpeed *= 0.7;
             }
         }
 

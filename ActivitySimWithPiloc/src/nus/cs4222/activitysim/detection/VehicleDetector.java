@@ -13,25 +13,15 @@ public class VehicleDetector {
 
     private State mVehicleState = State.NOT_IN_VEHICLE;
     private SpeedSensor mSpeedSensor;
+    private MotionSensor mMotionSensor;
 
-    public VehicleDetector(SpeedSensor speedSensor) {
+    public VehicleDetector(SpeedSensor speedSensor, MotionSensor motionSensor) {
         mSpeedSensor = speedSensor;
+        mMotionSensor = motionSensor;
     }
 
     public void doDetection() {
-        if (mSpeedSensor.getSpeed() >= THRESH_SPEED) {
-            switch (mVehicleState) {
-                case NOT_IN_VEHICLE:
-                    mVehicleState = State.MAYBE_IN_VEHICLE;
-                    break;
-                case MAYBE_IN_VEHICLE:
-                    mVehicleState = State.IN_VEHICLE;
-                    break;
-                case MAY_NOT_BE_IN_VEHICLE_1:
-                case MAY_NOT_BE_IN_VEHICLE_2:
-                    mVehicleState = State.MAYBE_IN_VEHICLE;
-            }
-        } else {
+        if (mSpeedSensor.getSpeed() < THRESH_SPEED) {
             switch (mVehicleState) {
                 case MAYBE_IN_VEHICLE:
                     mVehicleState = State.MAY_NOT_BE_IN_VEHICLE_1;
@@ -45,6 +35,18 @@ public class VehicleDetector {
                 case IN_VEHICLE:
                     mVehicleState = State.MAY_NOT_BE_IN_VEHICLE_2;
                     break;
+            }
+        } else {
+            switch (mVehicleState) {
+                case NOT_IN_VEHICLE:
+                    mVehicleState = State.MAYBE_IN_VEHICLE;
+                    break;
+                case MAYBE_IN_VEHICLE:
+                    mVehicleState = State.IN_VEHICLE;
+                    break;
+                case MAY_NOT_BE_IN_VEHICLE_1:
+                case MAY_NOT_BE_IN_VEHICLE_2:
+                    mVehicleState = State.MAYBE_IN_VEHICLE;
             }
         }
     }
