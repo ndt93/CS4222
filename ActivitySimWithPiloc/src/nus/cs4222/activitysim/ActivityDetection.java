@@ -1,9 +1,11 @@
 package nus.cs4222.activitysim;
 
+import android.util.Log;
 import nus.cs4222.activitysim.DataStructure.Fingerprint;
 import nus.cs4222.activitysim.detection.AccelSample;
+import nus.cs4222.activitysim.detection.SpeedSensor;
+import nus.cs4222.activitysim.detection.VehicleDetector;
 import nus.cs4222.activitysim.detection.WalkingDetector;
-import nus.cs4222.activitysim.detection.WalkingDetector.WalkingState;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,14 +49,19 @@ import java.util.Vector;
  does not need not be modified.
  */
 public class ActivityDetection {
+    private static final String TAG = ActivityDetection.class.getName();
     private UserActivities mCurrentActivity = UserActivities.IDLE_INDOOR;
 
+    private SpeedSensor mSpeedSensor;
     private WalkingDetector mWalkingDetector;
+    private VehicleDetector mVehicleDetector;
 
     /** Initialises the detection algorithm. */
-    public void initDetection()
-            throws Exception {
+    public void initDetection() throws Exception {
+
+        mSpeedSensor = new SpeedSensor();
         mWalkingDetector = new WalkingDetector();
+        mVehicleDetector = new VehicleDetector(mSpeedSensor);
 
         // If you are using the Piloc API, then you must load a radio map (in this case, Hande
         //  has provided the radio map data for the pathways marked in the map image in IVLE
@@ -75,18 +82,6 @@ public class ActivityDetection {
     }
 
     private void detectActivity() {
-        WalkingState walkingState = mWalkingDetector.getWalkingState();
-        if (mCurrentActivity == UserActivities.WALKING) {
-            if (walkingState == WalkingState.NOT_WALKING) {
-                mCurrentActivity = UserActivities.IDLE_INDOOR;
-                ActivitySimulator.outputDetectedActivity(mCurrentActivity);
-            }
-        } else {
-            if (walkingState == WalkingState.WALKING) {
-                mCurrentActivity = UserActivities.WALKING;
-                ActivitySimulator.outputDetectedActivity(mCurrentActivity);
-            }
-        }
     }
 
     /**
@@ -103,7 +98,7 @@ public class ActivityDetection {
                                      float y ,
                                      float z ,
                                      int accuracy ) {
-        mWalkingDetector.putAcclSample(new AccelSample(timestamp, x, y, z));
+        mWalkingDetector.doDetection(new AccelSample(timestamp, x, y, z));
         detectActivity();
     }
 
@@ -239,14 +234,21 @@ public class ActivityDetection {
      @param   bearing      Bearing (deg) (may be -1 if unavailable)
      @param   speed        Speed (m/sec) (may be -1 if unavailable)
      */
-    public void onLocationSensorChanged( long timestamp ,
-                                         String provider ,
-                                         double latitude ,
-                                         double longitude ,
-                                         float accuracy ,
-                                         double altitude ,
-                                         float bearing ,
-                                         float speed ) {
+    public void onLocationSensorChanged(long timestamp,
+                                        String provider,
+                                        double latitude,
+                                        double longitude,
+                                        float accuracy,
+                                        double altitude,
+                                        float bearing,
+                                        float speed) {
+        mSpeedSensor.putLocation(latitude, longitude, timestamp);
+        mVehicleDetector.doDetection();
+        if (timestamp >= 1490437589148L && timestamp <= 1490438212141L) {
+            Log.d(TAG, "Speed = " + mSpeedSensor.getSpeed());
+            Log.d(TAG, "State = " + mVehicleDetector.getVehicleState());
+        }
+        detectActivity();
     }
 
     /**

@@ -1,10 +1,7 @@
 package nus.cs4222.activitysim.detection;
 
-import android.util.Log;
-
 public class WalkingDetector {
     private static final String TAG = StepCounter.class.getName();
-    private static final int THRESH_UPDATE_PERIOD = 50;
     private static final int MIN_CONTINUOUS_STEPS = 10;
     private static final int MAX_IDLE = 10000;
     private static final int WINDOW_LOW = 200;
@@ -23,10 +20,10 @@ public class WalkingDetector {
     }
 
     public WalkingDetector() {
-        mStepCounter = new StepCounter(THRESH_UPDATE_PERIOD);
+        mStepCounter = new StepCounter();
     }
 
-    public void putAcclSample(AccelSample sample) {
+    public void doDetection(AccelSample sample) {
         mStepCounter.putAcclSample(sample);
 
         if (mStepCounter.getStepsCount() == mLastValidStepCount) {
@@ -43,7 +40,6 @@ public class WalkingDetector {
             } else if (mStepCounter.getLastStepTime() >= mLastValidStepTime + WINDOW_LOW) {
                 mNumContinuousSteps++;
             }
-            Log.d(TAG, "### Steps: " + mNumContinuousSteps);
             mLastValidStepCount = mStepCounter.getStepsCount();
             mLastValidStepTime = mStepCounter.getLastStepTime();
         }

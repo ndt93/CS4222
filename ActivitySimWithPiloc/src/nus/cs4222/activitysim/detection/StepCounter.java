@@ -2,6 +2,7 @@ package nus.cs4222.activitysim.detection;
 
 public class StepCounter {
     private static final String TAG = StepCounter.class.getName();
+    private static final int DEFAULT_THRESH_UPDATE_PERIOD = 50;
 
     enum State {
         WARMING_UP, READY
@@ -23,6 +24,10 @@ public class StepCounter {
 
     private int mNumSteps = 0;
     private long mLastStepTime = 0L;
+
+    public StepCounter() {
+        this(DEFAULT_THRESH_UPDATE_PERIOD);
+    }
 
     public StepCounter(int thresholdsUpdatePeriod) {
         mThresholdsUpdatePeriod = thresholdsUpdatePeriod;
