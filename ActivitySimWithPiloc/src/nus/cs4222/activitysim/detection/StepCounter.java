@@ -20,7 +20,7 @@ public class StepCounter {
     private float[] mMin = new float[3];
     private float[] mThresholds = new float[3];
 
-    private static final float MIN_CHANGE = 1f;
+    private static final float MIN_CHANGE = 2f;
 
     private int mNumSteps = 0;
     private long mLastStepTime = 0L;

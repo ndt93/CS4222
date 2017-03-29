@@ -2,7 +2,7 @@ package nus.cs4222.activitysim.detection;
 
 public class WalkingDetector {
     private static final String TAG = StepCounter.class.getName();
-    private static final int MIN_CONTINUOUS_STEPS = 10;
+    private static final int MIN_CONTINUOUS_STEPS = 20;
     private static final int MAX_IDLE = 5000;
     private static final int WINDOW_LOW = 200;
     private static final int WINDOW_HIGH = 2000;

@@ -108,9 +108,6 @@ public class ActivityDetection {
                 if (vehicleState == VehicleDetector.State.NOT_IN_VEHICLE &&
                         walkingState == WalkingDetector.State.WALKING) {
                     newActivity = UserActivities.WALKING;
-                } else if (vehicleState == VehicleDetector.State.NOT_IN_VEHICLE &&
-                        walkingState == WalkingDetector.State.NOT_WALKING) {
-                    newActivity = detectIdleEnv();
                 }
                 break;
             case IDLE_INDOOR:
