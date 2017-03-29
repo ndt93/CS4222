@@ -1,11 +1,7 @@
 package nus.cs4222.activitysim;
 
-import android.util.Log;
 import nus.cs4222.activitysim.DataStructure.Fingerprint;
-import nus.cs4222.activitysim.detection.AccelSample;
-import nus.cs4222.activitysim.detection.SpeedSensor;
-import nus.cs4222.activitysim.detection.VehicleDetector;
-import nus.cs4222.activitysim.detection.WalkingDetector;
+import nus.cs4222.activitysim.detection.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,29 +46,32 @@ import java.util.Vector;
  */
 public class ActivityDetection {
     private static final String TAG = ActivityDetection.class.getName();
+    private static final long MIN_ACTIVITY_DURATION = 30000;
+
     private UserActivities mCurrentActivity = UserActivities.IDLE_INDOOR;
+    private long mLastActivityChangeTime = 0;
 
     private SpeedSensor mSpeedSensor;
     private WalkingDetector mWalkingDetector;
     private VehicleDetector mVehicleDetector;
+    private EnvDetector mEnvDetector;
 
     /** Initialises the detection algorithm. */
     public void initDetection() throws Exception {
-
         mSpeedSensor = new SpeedSensor();
         mWalkingDetector = new WalkingDetector();
         mVehicleDetector = new VehicleDetector(mSpeedSensor);
-
         // If you are using the Piloc API, then you must load a radio map (in this case, Hande
         //  has provided the radio map data for the pathways marked in the map image in IVLE
         //  workbin, which represents IDLE_COM1 state). You can use your own radio map data, or
         //  code your own localization algorithm in PilocApi. Please see the "onWiFiSensorChanged()"
         //  method.
         pilocApi = new PilocApi();
-        if( pilocApi.loadRadioMap(new File("radiomap.rm")) == null) {
+        if (pilocApi.loadRadioMap(new File("radiomap.rm")) == null) {
             throw new IOException(
                     "Unable to open radio map file, did you specify the correct path in ActivityDetection.java?");
         }
+        mEnvDetector = new EnvDetector(pilocApi);
     }
 
     /** De-initialises the detection algorithm. */
@@ -82,6 +81,62 @@ public class ActivityDetection {
     }
 
     private void detectActivity() {
+        long currentTime = ActivitySimulator.currentTimeMillis();
+        if (currentTime < mLastActivityChangeTime + MIN_ACTIVITY_DURATION) {
+            return;
+        }
+
+        UserActivities newActivity = mCurrentActivity;
+
+        WalkingDetector.State walkingState = mWalkingDetector.getWalkingState();
+        VehicleDetector.State vehicleState = mVehicleDetector.getVehicleState();
+        String msg = "Current Activity: " + mCurrentActivity +
+                "\nWalking State: " + walkingState +
+                "\nVehicle State: " + vehicleState;
+        //Log.d(TAG, msg);
+
+        switch (mCurrentActivity) {
+            case WALKING:
+                if (vehicleState == VehicleDetector.State.IN_VEHICLE) {
+                    newActivity = UserActivities.BUS;
+                } else if (walkingState == WalkingDetector.State.NOT_WALKING &&
+                        vehicleState == VehicleDetector.State.NOT_IN_VEHICLE) {
+                    newActivity = detectIdleEnv();
+                }
+                break;
+            case BUS:
+                if (vehicleState == VehicleDetector.State.NOT_IN_VEHICLE &&
+                        walkingState == WalkingDetector.State.WALKING) {
+                    newActivity = UserActivities.WALKING;
+                } else if (vehicleState == VehicleDetector.State.NOT_IN_VEHICLE &&
+                        walkingState == WalkingDetector.State.NOT_WALKING) {
+                    newActivity = detectIdleEnv();
+                }
+                break;
+            case IDLE_INDOOR:
+            case IDLE_COM1:
+            case IDLE_OUTDOOR:
+                if (walkingState == WalkingDetector.State.WALKING) {
+                    newActivity = UserActivities.WALKING;
+                } else {
+                    newActivity = detectIdleEnv();
+                }
+        }
+
+        if (newActivity != mCurrentActivity) {
+            mCurrentActivity = newActivity;
+            mLastActivityChangeTime = currentTime;
+            ActivitySimulator.outputDetectedActivity(mCurrentActivity);
+        }
+    }
+
+    private UserActivities detectIdleEnv() {
+        EnvDetector.State envState = mEnvDetector.getEnvState();
+        if (envState == EnvDetector.State.OUTDOOR) {
+            return UserActivities.IDLE_OUTDOOR;
+        }
+        EnvDetector.Loc envLoc = mEnvDetector.getLoc();
+        return envLoc == EnvDetector.Loc.COM1 ? UserActivities.IDLE_COM1 : UserActivities.IDLE_INDOOR;
     }
 
     /**
@@ -205,9 +260,11 @@ public class ActivityDetection {
      @param   light        Light value (lux)
      @param   accuracy     Accuracy of the sensor data (you can ignore this)
      */
-    public void onLightSensorChanged( long timestamp ,
-                                      float light ,
-                                      int accuracy ) {
+    public void onLightSensorChanged(long timestamp ,
+                                     float light ,
+                                     int accuracy) {
+        mEnvDetector.putLightSample(timestamp, light);
+        detectActivity();
     }
 
     /**
@@ -244,10 +301,6 @@ public class ActivityDetection {
                                         float speed) {
         mSpeedSensor.putLocation(latitude, longitude, timestamp);
         mVehicleDetector.doDetection();
-        if (timestamp >= 1490437589148L && timestamp <= 1490438212141L) {
-            Log.d(TAG, "Speed = " + mSpeedSensor.getSpeed());
-            Log.d(TAG, "State = " + mVehicleDetector.getVehicleState());
-        }
         detectActivity();
     }
 
@@ -267,6 +320,8 @@ public class ActivityDetection {
         //  own localization algorithm in PilocApi.getLocation(). 
 
         // NOTE: Please use the "pilocApi" object defined below to use the Piloc API.
+        mEnvDetector.putWifiSample(fingerprintVector);
+        detectActivity();
     }
 
     /** Piloc API provided by Hande. */

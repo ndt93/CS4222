@@ -3,7 +3,7 @@ package nus.cs4222.activitysim.detection;
 public class WalkingDetector {
     private static final String TAG = StepCounter.class.getName();
     private static final int MIN_CONTINUOUS_STEPS = 10;
-    private static final int MAX_IDLE = 10000;
+    private static final int MAX_IDLE = 5000;
     private static final int WINDOW_LOW = 200;
     private static final int WINDOW_HIGH = 2000;
 
@@ -13,7 +13,7 @@ public class WalkingDetector {
     private long mLastValidStepTime = 0L;
     private int mNumContinuousSteps = 0;
 
-    public enum WalkingState {
+    public enum State {
         NOT_WALKING,
         MAYBE,
         WALKING
@@ -45,13 +45,13 @@ public class WalkingDetector {
         }
     }
 
-    public WalkingState getWalkingState() {
+    public State getWalkingState() {
         if (mNumContinuousSteps == 0) {
-            return WalkingState.NOT_WALKING;
+            return State.NOT_WALKING;
         }
         if (mNumContinuousSteps > MIN_CONTINUOUS_STEPS) {
-            return WalkingState.WALKING;
+            return State.WALKING;
         }
-        return WalkingState.MAYBE;
+        return State.MAYBE;
     }
 }
