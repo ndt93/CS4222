@@ -19,7 +19,7 @@ public class EnvDetector {
     }
 
     private static float EVENING_LIGHT_THRESH = 550;
-    private static float MORNING_LIGHT_THRESH = 1500;
+    private static float MORNING_LIGHT_THRESH = 800;
 
     private State mState;
     private Loc mLoc;

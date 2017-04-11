@@ -46,9 +46,9 @@ import java.util.Vector;
  */
 public class ActivityDetection {
     private static final String TAG = ActivityDetection.class.getName();
-    private static final long MIN_ACTIVITY_DURATION = 30000;
+    private static final long MIN_ACTIVITY_DURATION = 20000;
 
-    private UserActivities mCurrentActivity = UserActivities.IDLE_INDOOR;
+    private UserActivities mCurrentActivity = UserActivities.OTHER;
     private long mLastActivityChangeTime = 0;
 
     private SpeedSensor mSpeedSensor;
@@ -74,6 +74,8 @@ public class ActivityDetection {
                     "Unable to open radio map file, did you specify the correct path in ActivityDetection.java?");
         }
         mEnvDetector = new EnvDetector(pilocApi);
+
+        mLastActivityChangeTime = ActivitySimulator.currentTimeMillis();
     }
 
     /** De-initialises the detection algorithm. */
@@ -115,6 +117,7 @@ public class ActivityDetection {
             case IDLE_INDOOR:
             case IDLE_COM1:
             case IDLE_OUTDOOR:
+            case OTHER:
                 if (walkingState == WalkingDetector.State.WALKING) {
                     newActivity = UserActivities.WALKING;
                 } else if (mMotionSensor.getMotionState() == MotionSensor.State.MOVING &&
