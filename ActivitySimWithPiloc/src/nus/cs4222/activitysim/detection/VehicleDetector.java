@@ -6,10 +6,12 @@ public class VehicleDetector {
         MAYBE_IN_VEHICLE,
         MAY_NOT_BE_IN_VEHICLE_1,
         MAY_NOT_BE_IN_VEHICLE_2,
-        IN_VEHICLE
+        IN_VEHICLE,
+        IN_VEHICLE_OVERRIDE
     }
 
     private static final double THRESH_SPEED = 7;
+    private static final double THRESH_SPEED_LASTING_TIME = 30;
 
     private State mVehicleState = State.NOT_IN_VEHICLE;
     private SpeedSensor mSpeedSensor;
@@ -32,6 +34,7 @@ public class VehicleDetector {
                 case MAY_NOT_BE_IN_VEHICLE_2:
                     mVehicleState = State.MAY_NOT_BE_IN_VEHICLE_1;
                     break;
+                case IN_VEHICLE_OVERRIDE:
                 case IN_VEHICLE:
                     mVehicleState = State.MAY_NOT_BE_IN_VEHICLE_2;
                     break;
@@ -47,6 +50,12 @@ public class VehicleDetector {
                 case MAY_NOT_BE_IN_VEHICLE_1:
                 case MAY_NOT_BE_IN_VEHICLE_2:
                     mVehicleState = State.MAYBE_IN_VEHICLE;
+                    break;
+                case IN_VEHICLE:
+                	if (mSpeedSensor.getSpeedLastingTime() > THRESH_SPEED_LASTING_TIME){
+                		mVehicleState = State.IN_VEHICLE_OVERRIDE;
+                	}
+                	break;
             }
         }
     }

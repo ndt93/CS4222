@@ -120,10 +120,15 @@ public class ActivityDetection {
             case OTHER:
                 if (walkingState == WalkingDetector.State.WALKING) {
                     newActivity = UserActivities.WALKING;
-                } else if (mMotionSensor.getMotionState() == MotionSensor.State.MOVING &&
+                } 
+                else if (vehicleState == VehicleDetector.State.IN_VEHICLE_OVERRIDE){
+                	newActivity = UserActivities.BUS;
+                }
+                else if (mMotionSensor.getMotionState() == MotionSensor.State.MOVING &&
                         vehicleState == VehicleDetector.State.IN_VEHICLE) {
                     newActivity = UserActivities.BUS;
-                } else {
+                } 
+                else {
                     newActivity = detectIdleEnv();
                 }
         }

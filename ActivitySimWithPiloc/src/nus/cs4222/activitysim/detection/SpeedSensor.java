@@ -7,7 +7,10 @@ public class SpeedSensor {
     private double mLastLon;
     private double mLastLat;
     private long mLastTime;
-
+    private double speedLastingTime = 0.0;
+    
+    private static final double THRESH_SPEED = 7;
+    
     public void putLocation(double lat, double lon, long timestamp) {
         if (timestamp == mLastTime) {
             return;
@@ -21,7 +24,15 @@ public class SpeedSensor {
             } else {
                 mSpeed *= 0.7;
             }
+            
+            if (mSpeed < THRESH_SPEED){
+            	speedLastingTime = 0.0;
+            } else {
+            	speedLastingTime = speedLastingTime + dt;
+            }
         }
+        
+        
 
         mLastLat = lat;
         mLastLon = lon;
@@ -30,6 +41,10 @@ public class SpeedSensor {
 
     public double getSpeed() {
         return mSpeed;
+    }
+    
+    public double getSpeedLastingTime() {
+        return speedLastingTime;
     }
 
     private static double distance(double lat1, double lon1, double lat2, double lon2) {
