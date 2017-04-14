@@ -18,8 +18,8 @@ public class EnvDetector {
         COM1, OTHER
     }
 
-    private static float EVENING_LIGHT_THRESH = 550;
-    private static float MORNING_LIGHT_THRESH = 800;
+    //private static float EVENING_LIGHT_THRESH = 500;
+    private static float MORNING_LIGHT_THRESH = 350;
 
     private State mState;
     private Loc mLoc;
@@ -35,10 +35,9 @@ public class EnvDetector {
     public void putLightSample(long timestamp, float light) {
         float thresh = MORNING_LIGHT_THRESH;
         mCalendar.setTimeInMillis(timestamp);
-        if (mCalendar.get(Calendar.HOUR_OF_DAY) >= 18) {
-            thresh = EVENING_LIGHT_THRESH;
-        }
-
+        //if ((mCalendar.get(Calendar.HOUR_OF_DAY) >= 18) || (mCalendar.get(Calendar.HOUR_OF_DAY) <= 6)) {
+        //    thresh = EVENING_LIGHT_THRESH;
+        //}
         mState = light > thresh ? State.OUTDOOR : State.INDOOR;
     }
 
